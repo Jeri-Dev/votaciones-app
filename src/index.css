@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-navy-950: #071a2f;
+  --color-navy-900: #0b2545;
+  --color-navy-800: #13315c;
+  --color-navy-700: #1d4477;
+  --color-navy-100: #e3ebf6;
+  --color-navy-50: #f2f6fb;
+  --animate-pop: pop 180ms ease-out;
+  --animate-fade-in: fade-in 220ms ease-out;
+  --animate-shake: shake 360ms ease-in-out;
+  --animate-pulse-ring: pulse-ring 1.4s ease-out 2;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(245 158 11 / 0.7); }
+  100% { box-shadow: 0 0 0 18px rgb(245 158 11 / 0); }
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-slate-100);
+  color: var(--color-slate-900);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Kiosko: sin selección de texto ni menús de pulsación larga. */
+.kiosk {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
