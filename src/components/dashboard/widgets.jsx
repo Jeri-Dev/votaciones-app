@@ -1,4 +1,5 @@
 import { Trophy } from 'lucide-react';
+import { seatLabel } from '../../utils/seats.js';
 import { actionLabel, formatTime } from '../../utils/format.js';
 import { Card } from '../shared/ui.jsx';
 
@@ -60,12 +61,22 @@ export function ResultBars({ position, barClass = 'bg-navy-700' }) {
       <ul className="space-y-2.5">
         {position.candidates.map((c) => {
           const winner = position.winnerIds.includes(c.id);
+          const seat = seatLabel(position, c.id);
           return (
             <li key={c.id}>
               <div className="mb-1 flex items-center justify-between gap-3 text-sm">
                 <span className={`flex min-w-0 items-center gap-1.5 ${winner ? 'font-semibold text-slate-900' : 'text-slate-700'}`}>
-                  {winner && <Trophy className={`size-4 shrink-0 ${position.tie ? 'text-amber-500' : 'text-yellow-500'}`} />}
+                  {winner && <Trophy className={`size-4 shrink-0 ${seat?.tie ? 'text-amber-500' : 'text-yellow-500'}`} />}
                   <span className="truncate">{c.name}</span>
+                  {seat && (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        seat.tie ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {seat.text}
+                    </span>
+                  )}
                 </span>
                 <span className="shrink-0 tabular-nums text-slate-600">
                   <span className="font-semibold text-slate-900">{c.votes}</span> · {c.pct}%

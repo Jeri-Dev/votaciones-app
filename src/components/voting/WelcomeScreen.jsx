@@ -16,7 +16,8 @@ export function WelcomeScreen() {
         <p className="text-base font-medium uppercase tracking-widest text-navy-100/80 sm:text-xl">Bienvenido</p>
         <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-6xl">{state.election?.name || 'Elección de directivas'}</h1>
         <p className="mt-5 text-xl leading-relaxed text-navy-100 sm:mt-6 sm:text-2xl">
-          Va a elegir Presidente, Vicepresidente, Secretario y Tesorero de cada directiva.
+          En cada directiva votará por la Presidencia y por la Secretaría. El segundo más votado será
+          Vicepresidente o Tesorero.
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3 sm:mt-10 sm:gap-4">

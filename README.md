@@ -3,6 +3,8 @@
 Sistema de votación electrónica, anónimo y gratuito, para elegir las directivas de **Caballeros, Damas y Jóvenes**
 (Presidente, Vicepresidente, Secretario y Tesorero de cada una).
 
+**Cómo se eligen los cargos:** en cada directiva hay **2 votaciones**. En **Presidencia**, el más votado es **Presidente** y el segundo, **Vicepresidente**. En **Secretaría**, el más votado es **Secretario** y el segundo, **Tesorero**. Cada persona marca 1 candidato por votación: 6 en total (2 × 3 directivas).
+
 - **Estaciones de votación** (hasta 10 tablets): una sola papeleta con las 3 directivas, letra grande, pensada para personas mayores.
 - **Panel del staff**: estado de la elección, estaciones en vivo, candidatos, resultados y exportación CSV.
 - **Gratis**: React + Vite servido por **Google Apps Script**, datos en **Google Sheets**. Sin servidores ni bases de datos externas.
@@ -45,7 +47,7 @@ Panel staff ─┼─ google.script.run ─► Apps Script ─┤  Script Proper
 Bloqueada ──(3 toques en la esquina sup. izquierda, o "Habilitar" en el panel)──► Bienvenida
    ▲                                                                  │ "Comenzar a votar"
    │                                                                  ▼
-   └──── ¡Su voto fue registrado! ◄── Confirmar ◄── Revisar ◄── Papeleta (12 cargos)
+   └──── ¡Su voto fue registrado! ◄── Confirmar ◄── Revisar ◄── Papeleta (6 votaciones)
 ```
 
 Después de cada voto, la estación queda **bloqueada en el servidor**: recargar la página no la desbloquea.
@@ -130,7 +132,7 @@ Si su iglesia no está en República Dominicana, cambie `timeZone` en `apps-scri
 3. Acepte los permisos (Google mostrará “Google no verificó esta app” → *Configuración avanzada → Ir a Votación Iglesia*). Es normal: la app es suya.
 4. Abra el **Registro de ejecución**: verá los enlaces del panel, de la pantalla de resultados y de las estaciones.
 
-`setupDatabase` crea las hojas `Elections`, `Categories`, `Positions`, `Candidates`, `Votes`, `Devices` y `AuditLog`, siembra las 3 directivas y los 12 cargos, y crea la primera elección en estado *En preparación*. Puede ejecutarla las veces que quiera: **nunca borra datos**.
+`setupDatabase` crea las hojas `Elections`, `Categories`, `Positions`, `Candidates`, `Votes`, `Devices` y `AuditLog`, siembra las 3 directivas con sus 2 votaciones (Presidencia y Secretaría), y crea la primera elección en estado *En preparación*. Puede ejecutarla las veces que quiera: **nunca toca los votos**. Si la hoja tenía la estructura anterior de 4 cargos separados y aún no hay votos, la migra sola: los candidatos de Vicepresidente pasan a Presidencia y los de Tesorero a Secretaría.
 
 ### 3.6 Publicar como aplicación web
 
@@ -238,6 +240,12 @@ Hágalo unos días antes, con 2–3 tablets reales:
 | Hay que hacer una pausa | Panel → **Pausar**. Quien esté votando conserva su papeleta y continúa al **Reanudar**. |
 | Una tablet falla | Panel → Estaciones → **Deshabilitar** esa estación y usar otra. |
 
+### Empates
+
+- **Empate por el primer lugar** (p. ej. dos candidatos con 3 votos): la pantalla muestra *Presidente / Vicepresidente · empate*. Los dos ocupan los dos cargos, pero falta definir quién es el titular.
+- **Empate por el segundo lugar:** el titular queda definido y el segundo cargo (Vicepresidente o Tesorero) aparece como *empate*.
+- El sistema no desempata: la directiva decide según su reglamento (por ejemplo, una segunda vuelta en papel).
+
 ### Al cerrar
 
 1. Panel → **Cerrar votación** (es definitivo; bloquea todas las estaciones).
@@ -269,7 +277,7 @@ Hágalo unos días antes, con 2–3 tablets reales:
 - **Una papeleta por desbloqueo:** el servidor solo acepta votos de estaciones *Habilitadas* y las bloquea al registrar. El control de quién vota lo hace el staff en persona.
 - **Sin duplicados:** cada papeleta lleva un identificador generado antes de enviarse. Los reintentos usan el mismo y el servidor lo reconoce.
 - **Todo o nada:** las 12 filas de una papeleta se escriben con una sola operación dentro de `LockService`. Si algo quedara incompleto, se excluye del conteo y se avisa en el panel.
-- **Validación en el servidor:** elección abierta, estación habilitada, 12 cargos, un candidato válido por cargo y de la directiva correcta.
+- **Validación en el servidor:** elección abierta, estación habilitada, 6 votaciones, un candidato válido por votación y de la directiva correcta.
 - **Estaciones:** cada tablet tiene un token aleatorio. En la hoja solo se guarda su hash SHA‑256. El identificador de la estación no sirve como credencial.
 - **Desbloqueo:** 3 toques seguidos (menos de 0,7 s entre cada uno) en un cuadrado de 160 px de la esquina superior izquierda. Toques lentos o en otro lugar reinician la cuenta. Es un gesto del staff para evitar habilitaciones accidentales, no una contraseña: el control de quién vota es físico.
 - **Panel:** protegido por la llave secreta del enlace. Las estaciones nunca reciben resultados: la API de las estaciones no tiene esa función.
@@ -333,7 +341,7 @@ tests/                    Vitest: servidor real en el emulador + lógica del cli
 | “Enlace de administración inválido” | El enlace debe incluir `?view=admin&key=…` completo. Ejecute `mostrarDatosAdmin` para verlo. |
 | “El sistema no está configurado” | Ejecute `setupDatabase` en el editor. |
 | `setupDatabase` dice “solo puede ejecutarse desde el editor” | Ejecútela con la cuenta **dueña** del script y acepte todos los permisos solicitados (incluido ver su correo electrónico, que se usa para comprobar que es el dueño). |
-| “Faltan candidatos en: …” al abrir | Cada uno de los 12 cargos necesita al menos un candidato activo. |
+| “Faltan candidatos en: …” al abrir | Cada votación (Presidencia y Secretaría de cada directiva) necesita **al menos 2 candidatos activos**, para que haya titular y segundo. |
 | “Ya hay 10 estaciones activas” | Deshabilite estaciones viejas en Panel → Estaciones. |
 | Cambié el código y las tablets no lo ven | Publique una **nueva versión** de la implementación (sección 4). |
 | `clasp push` falla con “User has not enabled the Apps Script API” | Active la API en <https://script.google.com/home/usersettings>. |

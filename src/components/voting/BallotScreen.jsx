@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronRight, CircleCheck } from 'lucide-react';
 import { useKiosk } from '../../context/KioskContext.jsx';
 import { ballotProgress } from '../../utils/ballot.js';
+import { rolesHint } from '../../utils/seats.js';
 import { Avatar, Button } from '../shared/ui.jsx';
 import { directivaStyle } from './directivas.js';
 
@@ -52,6 +53,9 @@ function PositionBlock({ position, categoryName, selectedId, onSelect, highlight
           <span className="text-lg text-slate-500 sm:text-xl">Toque una persona</span>
         )}
       </div>
+      {rolesHint(position.roles) && (
+        <p className="-mt-2 mb-4 text-base text-slate-600 sm:text-lg">{rolesHint(position.roles)}</p>
+      )}
       <div role="radiogroup" aria-label={`${position.name} de ${categoryName}`} className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {position.candidates.map((c) => (
           <CandidateCard key={c.id} candidate={c} selected={selectedId === c.id} onSelect={() => onSelect(position.id, c.id)} style={style} />
@@ -163,9 +167,7 @@ export function BallotScreen() {
         <div className="mx-auto flex max-w-6xl items-center gap-3 sm:gap-5">
           <div className="min-w-0 flex-1">
             <p className="text-lg font-semibold text-slate-900 sm:text-2xl">
-              {progress.done} de {progress.total}
-              <span className="hidden sm:inline"> cargos elegidos</span>
-              <span className="sm:hidden"> listos</span>
+              {progress.done} de {progress.total} listos
             </p>
             <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-200 sm:h-4">
               <div
@@ -178,7 +180,10 @@ export function BallotScreen() {
             </p>
           </div>
           <Button variant={progress.complete ? 'success' : 'primary'} size="xl" onClick={onReview} className="shrink-0">
-            Revisar<span className="hidden sm:inline">&nbsp;mi voto</span> <ChevronRight className="size-6 sm:size-8" />
+            <span>
+              Revisar<span className="hidden sm:inline"> mi voto</span>
+            </span>
+            <ChevronRight className="size-6 sm:size-8" />
           </Button>
         </div>
       </div>

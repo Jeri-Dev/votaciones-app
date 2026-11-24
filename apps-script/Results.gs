@@ -66,20 +66,49 @@ function getResults_() {
           const votes = counts[c.id] || 0;
           return { id: c.id, name: c.name, votes: votes, pct: total ? Math.round((votes / total) * 1000) / 10 : 0 };
         }).sort(function (a, b) { return b.votes - a.votes || a.name.localeCompare(b.name, 'es'); });
-        const top = list.length ? list[0].votes : 0;
-        const leaders = list.filter(function (c) { return top > 0 && c.votes === top; });
+        const seats = assignSeats_(pos.roles, list);
+        const winnerIds = [];
+        seats.forEach(function (s) {
+          s.candidateIds.forEach(function (id) { if (winnerIds.indexOf(id) === -1) winnerIds.push(id); });
+        });
         return {
           id: pos.id,
           name: pos.name,
+          roles: pos.roles,
           total: total,
           candidates: list,
-          winnerIds: leaders.map(function (c) { return c.id; }),
-          tie: leaders.length > 1,
+          seats: seats,
+          winnerIds: winnerIds,
+          tie: seats.some(function (s) { return s.tie; }),
         };
       }),
     };
   });
   return base;
+}
+
+/**
+ * Reparte los cargos de una votación por orden de votos: el 1.º obtiene roles[0]
+ * (Presidente / Secretario) y el 2.º roles[1] (Vicepresidente / Tesorero).
+ * Si hay varios candidatos con los mismos votos en esa posición, el cargo queda en EMPATE
+ * y se listan todos. Sin votos no se asigna nada.
+ * list debe venir ordenada por votos descendente.
+ */
+function assignSeats_(roles, list) {
+  return roles.map(function (role, i) {
+    const at = list[i];
+    if (!at || at.votes === 0) return { role: role, candidateIds: [], tie: false };
+    const same = list.filter(function (c) { return c.votes === at.votes; });
+    return { role: role, candidateIds: same.map(function (c) { return c.id; }), tie: same.length > 1 };
+  });
+}
+
+/** Etiqueta del cargo que obtiene un candidato ("Presidente", "EMPATE: Vicepresidente", ""). */
+function seatLabel_(seats, candidateId) {
+  const held = seats.filter(function (s) { return s.candidateIds.indexOf(candidateId) !== -1; });
+  if (!held.length) return '';
+  const roles = held.map(function (s) { return s.role; }).join(' / ');
+  return held.some(function (s) { return s.tie; }) ? 'EMPATE: ' + roles : roles;
 }
 
 /** Todo lo que el dashboard necesita en una sola llamada (se consulta cada ~4 s). */
@@ -131,12 +160,11 @@ function exportResultsToSheet_() {
     let sh = ss.getSheetByName(name);
     if (!sh) sh = ss.insertSheet(name);
     sh.clear();
-    const rows = [['Elección', 'Directiva', 'Cargo', 'Candidato', 'Votos', 'Porcentaje', 'Ganador']];
+    const rows = [['Elección', 'Directiva', 'Votación', 'Candidato', 'Votos', 'Porcentaje', 'Cargo obtenido']];
     results.categories.forEach(function (cat) {
       cat.positions.forEach(function (pos) {
         pos.candidates.forEach(function (c) {
-          rows.push([results.election.name, cat.name, pos.name, c.name, String(c.votes), c.pct + '%',
-            pos.winnerIds.indexOf(c.id) !== -1 ? (pos.tie ? 'EMPATE' : 'SÍ') : '']);
+          rows.push([results.election.name, cat.name, pos.name, c.name, String(c.votes), c.pct + '%', seatLabel_(pos.seats, c.id)]);
         });
       });
     });

@@ -8,7 +8,8 @@
 const SCHEMA = {
   Elections: ['id', 'name', 'description', 'status', 'created_at', 'opened_at', 'closed_at'],
   Categories: ['id', 'name', 'sort'],
-  Positions: ['id', 'name', 'category_id', 'sort'],
+  // Cada "position" es una votación que reparte varios cargos por orden de votos (roles).
+  Positions: ['id', 'name', 'category_id', 'sort', 'roles'],
   Candidates: ['id', 'election_id', 'name', 'category_id', 'position_id', 'photo_url', 'active', 'created_at'],
   // Votes NO guarda dispositivo, hora exacta ni nada del votante.
   Votes: ['vote_id', 'ballot_id', 'election_id', 'category_id', 'position_id', 'candidate_id', 'created_at'],
@@ -22,18 +23,21 @@ const SEED_CATEGORIES = [
   ['JOV', 'Jóvenes', '3'],
 ];
 
+// Por directiva hay 2 votaciones. El más votado ocupa el primer cargo y el segundo, el otro.
 const SEED_POSITIONS = [
-  ['PRES', 'Presidente'],
-  ['VICE', 'Vicepresidente'],
-  ['SECR', 'Secretario'],
-  ['TESO', 'Tesorero'],
+  ['PRES', 'Presidente y Vicepresidente', 'Presidente|Vicepresidente'],
+  ['SECR', 'Secretario y Tesorero', 'Secretario|Tesorero'],
 ];
+
+// Estructura anterior (4 cargos separados) → votación en la que se integran.
+const LEGACY_POSITION_MERGE = { VICE: 'PRES', TESO: 'SECR' };
 
 let SPREADSHEET_CACHE_ = null;
 
 /**
- * Crea (o completa) todas las hojas. Es idempotente y NO destructiva:
- * nunca borra ni modifica datos existentes. Ejecútela desde el editor.
+ * Crea (o completa) todas las hojas. Es idempotente: se puede ejecutar varias veces.
+ * Nunca toca la hoja Votes. Solo migra la estructura de cargos si no hay votos que la usen.
+ * Ejecútela desde el editor.
  */
 function setupDatabase() {
   assertOwner_();
@@ -57,13 +61,7 @@ function setupDatabase() {
       appendRecord_('Categories', { id: c[0], name: c[1], sort: c[2] });
     });
   }
-  if (readTable_('Positions').length === 0) {
-    SEED_CATEGORIES.forEach(function (c) {
-      SEED_POSITIONS.forEach(function (pos, i) {
-        appendRecord_('Positions', { id: c[0] + '-' + pos[0], name: pos[1], category_id: c[0], sort: String(i + 1) });
-      });
-    });
-  }
+  syncPositions_();
 
   if (!p.getProperty('ADMIN_KEY')) {
     p.setProperty('ADMIN_KEY', randomToken_().slice(0, 24));
@@ -76,6 +74,59 @@ function setupDatabase() {
   audit_('system', 'SETUP', 'Base de datos verificada');
   mostrarDatosAdmin();
   return 'OK';
+}
+
+/**
+ * Deja la hoja Positions con las 2 votaciones por directiva (Presidencia y Secretaría).
+ * Si existe la estructura anterior de 4 cargos y NO hay votos que la usen, la migra:
+ * los candidatos de Vicepresidente pasan a Presidencia y los de Tesorero a Secretaría.
+ * Si ya hay votos con la estructura anterior, no toca nada y lo avisa en el registro.
+ */
+function syncPositions_() {
+  const desired = [];
+  SEED_CATEGORIES.forEach(function (c) {
+    SEED_POSITIONS.forEach(function (pos, i) {
+      desired.push({ id: c[0] + '-' + pos[0], name: pos[1], category_id: c[0], sort: String(i + 1), roles: pos[2] });
+    });
+  });
+  const desiredIds = desired.map(function (d) { return d.id; });
+
+  const legacy = readTable_('Positions').filter(function (p) { return desiredIds.indexOf(p.id) === -1; });
+  if (legacy.length) {
+    const legacyIds = legacy.map(function (p) { return p.id; });
+    const used = readTable_('Votes').some(function (v) { return legacyIds.indexOf(v.position_id) !== -1; });
+    if (used) {
+      Logger.log('ATENCIÓN: hay votos registrados con la estructura anterior de cargos; no se migró. Cree una elección nueva en una hoja nueva.');
+      return;
+    }
+    readTable_('Candidates').forEach(function (c) {
+      const parts = c.position_id.split('-');
+      const target = LEGACY_POSITION_MERGE[parts[1]];
+      if (target) {
+        c.position_id = parts[0] + '-' + target;
+        updateRecord_('Candidates', c);
+      }
+    });
+    // Borrar de abajo hacia arriba para que los números de fila sigan siendo válidos.
+    legacy.sort(function (a, b) { return b._row - a._row; }).forEach(function (p) { deleteRecord_('Positions', p); });
+    Logger.log('Cargos migrados: Presidente+Vicepresidente y Secretario+Tesorero ahora se votan juntos.');
+  }
+
+  const current = readTable_('Positions');
+  desired.forEach(function (d) {
+    const existing = current.filter(function (p) { return p.id === d.id; })[0];
+    if (!existing) {
+      appendRecord_('Positions', d);
+    } else if (existing.name !== d.name || existing.roles !== d.roles || existing.sort !== d.sort) {
+      d._row = existing._row;
+      updateRecord_('Positions', d);
+    }
+  });
+}
+
+/** Cargos que reparte una votación, en orden de votos (["Presidente","Vicepresidente"]). */
+function positionRoles_(position) {
+  return position.roles ? String(position.roles).split('|') : [position.name];
 }
 
 /** Muestra en el registro de ejecución el enlace secreto del panel. Solo para el dueño. */
@@ -115,8 +166,12 @@ function ensureSheet_(ss, name, headers) {
   let sh = ss.getSheetByName(name);
   if (!sh) sh = ss.insertSheet(name);
   const firstRow = sh.getRange(1, 1, 1, headers.length).getValues()[0];
-  if (firstRow.every(function (v) { return v === ''; })) {
+  // Encabezados vacíos o incompletos (columna nueva al final): se completan sin tocar datos.
+  const compatible = firstRow.every(function (v, i) { return v === '' || v === headers[i]; });
+  if (compatible && firstRow.some(function (v, i) { return v !== headers[i]; })) {
     sh.getRange(1, 1, 1, headers.length).setNumberFormat('@').setValues([headers]);
+  } else if (!compatible) {
+    Logger.log('ATENCIÓN: los encabezados de la hoja ' + name + ' no coinciden con lo esperado.');
   }
   sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#0f2a4a').setFontColor('#ffffff');
   sh.setFrozenRows(1);

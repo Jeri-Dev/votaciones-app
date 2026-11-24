@@ -5,34 +5,67 @@ import { usePolling } from '../hooks/usePolling.js';
 import { directivaStyle } from '../components/voting/directivas.js';
 import { Spinner } from '../components/shared/ui.jsx';
 import { ELECTION_STATUS, formatTime } from '../utils/format.js';
+import { seatLabel, seatSummary } from '../utils/seats.js';
 
 const POLL_MS = 4000;
 
 function PositionResult({ position, accent }) {
-  const winners = position.candidates.filter((c) => position.winnerIds.includes(c.id));
+  const seats = seatSummary(position);
   return (
     <div className="flex flex-1 flex-col rounded-2xl bg-white/[0.06] px-4 py-3 lg:px-[1.4vw] lg:py-[1vh]">
       <div className="flex shrink-0 items-baseline justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-white/60 lg:text-[clamp(0.7rem,1.3vh,1.1rem)]">{position.name}</p>
         {position.tie && <span className="text-xs font-bold text-amber-300 lg:text-[clamp(0.7rem,1.3vh,1.1rem)]">EMPATE</span>}
       </div>
-      <p className="flex shrink-0 items-center gap-2 truncate text-xl font-bold leading-snug text-white lg:text-[clamp(1rem,2.5vh,2.2rem)]">
-        {winners.length ? (
-          <>
-            <Trophy className="size-[1em] shrink-0 text-yellow-300" />
-            <span className="truncate">{winners.map((w) => w.name).join(' / ')}</span>
-          </>
-        ) : (
-          <span className="text-white/40">Sin votos</span>
-        )}
-      </p>
-      <ul className="mt-2 space-y-2 lg:mt-[0.6vh] lg:space-y-[0.5vh]">
+      {/* Cargos obtenidos: 1.º (Presidente/Secretario) y 2.º (Vicepresidente/Tesorero). */}
+      <div className="mt-1 grid shrink-0 gap-x-4 gap-y-1 sm:grid-cols-2">
+        {seats.map((s, i) => (
+          <div key={s.role} className={`min-w-0 ${s.merged ? 'sm:col-span-2' : ''}`}>
+            <p className={`text-xs font-semibold lg:text-[clamp(0.7rem,1.3vh,1.1rem)] ${s.tie ? 'text-amber-300' : 'text-white/60'}`}>
+              {s.role}
+              {s.tie && ' · empate'}
+            </p>
+            {s.tie ? (
+              // Empate: todos los nombres completos, sin recortar.
+              <p className="font-bold leading-snug text-white text-lg lg:text-[clamp(0.9rem,2.1vh,1.8rem)]">
+                {s.names.join(' y ')}
+              </p>
+            ) : (
+              <p
+                className={`flex items-center gap-1.5 truncate font-bold leading-snug text-white ${
+                  i === 0 ? 'text-xl lg:text-[clamp(1rem,2.5vh,2.2rem)]' : 'text-lg lg:text-[clamp(0.9rem,2.1vh,1.8rem)]'
+                }`}
+              >
+                {s.names.length ? (
+                  <>
+                    {i === 0 && <Trophy className="size-[1em] shrink-0 text-yellow-300" />}
+                    <span className="truncate">{s.names[0]}</span>
+                  </>
+                ) : (
+                  <span className="text-white/40">—</span>
+                )}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+      <ul className="mt-2 space-y-2 lg:mt-[0.8vh] lg:space-y-[0.5vh]">
         {position.candidates.map((c) => {
           const winner = position.winnerIds.includes(c.id);
+          const seat = seatLabel(position, c.id);
           return (
             <li key={c.id}>
               <div className="flex items-baseline justify-between gap-3 text-sm leading-tight lg:text-[clamp(0.75rem,1.6vh,1.35rem)]">
-                <span className={`truncate ${winner ? 'font-semibold text-white' : 'text-white/70'}`}>{c.name}</span>
+                <span className={`flex min-w-0 items-baseline gap-2 ${winner ? 'font-semibold text-white' : 'text-white/70'}`}>
+                  <span className="truncate">{c.name}</span>
+                  {seat && (
+                    <span
+                      className={`shrink-0 text-[0.75em] font-semibold uppercase tracking-wide ${seat.tie ? 'text-amber-300' : 'text-white/50'}`}
+                    >
+                      {seat.text}
+                    </span>
+                  )}
+                </span>
                 <span className="shrink-0 tabular-nums text-white/80">
                   <span className="font-bold text-white">{c.votes}</span> · {c.pct}%
                 </span>

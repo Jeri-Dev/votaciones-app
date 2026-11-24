@@ -138,7 +138,10 @@ function setElectionStatus_(payload) {
   });
 }
 
-/** Cargos sin ningún candidato activo (impiden abrir la votación). */
+/**
+ * Votaciones sin suficientes candidatos activos (impiden abrir la votación).
+ * Cada una necesita al menos tantos candidatos como cargos reparte (2: titular y segundo).
+ */
 function positionsWithoutCandidates_(electionId) {
   const candidates = readTable_('Candidates').filter(function (c) {
     return c.election_id === electionId && isTrue_(c.active);
@@ -148,7 +151,10 @@ function positionsWithoutCandidates_(electionId) {
   categories.forEach(function (c) { catName[c.id] = c.name; });
   return readTable_('Positions')
     .filter(function (p) {
-      return !candidates.some(function (c) { return c.position_id === p.id; });
+      const count = candidates.filter(function (c) { return c.position_id === p.id; }).length;
+      return count < positionRoles_(p).length;
     })
-    .map(function (p) { return p.name + ' (' + catName[p.category_id] + ')'; });
+    .map(function (p) {
+      return p.name + ' (' + catName[p.category_id] + ', mínimo ' + positionRoles_(p).length + ')';
+    });
 }

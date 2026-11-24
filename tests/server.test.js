@@ -2,13 +2,20 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestServer, openElectionWithDevice, fullSelections, newBallotId, ADMIN_KEY } from './helpers/server.js';
 
 describe('setupDatabase', () => {
-  it('crea todas las hojas, 3 directivas y 12 cargos', () => {
+  it('crea todas las hojas, 3 directivas y 2 votaciones por directiva', () => {
     const t = createTestServer();
     expect(Object.keys(t.holder.state.sheets).sort()).toEqual(
       ['AuditLog', 'Candidates', 'Categories', 'Devices', 'Elections', 'Positions', 'Votes'],
     );
     expect(t.table('Categories').map((c) => c.name)).toEqual(['Caballeros', 'Damas', 'Jóvenes']);
-    expect(t.table('Positions')).toHaveLength(12);
+    expect(t.table('Positions').map((p) => [p.id, p.name, p.roles])).toEqual([
+      ['CAB-PRES', 'Presidente y Vicepresidente', 'Presidente|Vicepresidente'],
+      ['CAB-SECR', 'Secretario y Tesorero', 'Secretario|Tesorero'],
+      ['DAM-PRES', 'Presidente y Vicepresidente', 'Presidente|Vicepresidente'],
+      ['DAM-SECR', 'Secretario y Tesorero', 'Secretario|Tesorero'],
+      ['JOV-PRES', 'Presidente y Vicepresidente', 'Presidente|Vicepresidente'],
+      ['JOV-SECR', 'Secretario y Tesorero', 'Secretario|Tesorero'],
+    ]);
     expect(t.table('Elections')[0].status).toBe('DRAFT');
   });
 
@@ -17,9 +24,9 @@ describe('setupDatabase', () => {
     const t = createTestServer();
     t.adminOk('seedTestData');
     t.server.setupDatabase();
-    expect(t.table('Positions')).toHaveLength(12);
+    expect(t.table('Positions')).toHaveLength(6);
     expect(t.table('Elections')).toHaveLength(1);
-    expect(t.table('Candidates')).toHaveLength(36);
+    expect(t.table('Candidates')).toHaveLength(24);
   });
 
   it('no puede ejecutarse desde la web por un visitante anónimo', () => {
@@ -108,17 +115,21 @@ describe('votación', () => {
     ballot = t.kioskOk('ballot', token);
   });
 
-  it('la papeleta tiene 3 directivas × 4 cargos', () => {
+  it('la papeleta tiene 3 directivas × 2 votaciones, cada una con sus 2 cargos', () => {
     expect(ballot.categories).toHaveLength(3);
-    ballot.categories.forEach((c) => expect(c.positions).toHaveLength(4));
+    ballot.categories.forEach((c) => {
+      expect(c.positions).toHaveLength(2);
+      expect(c.positions[0].roles).toEqual(['Presidente', 'Vicepresidente']);
+      expect(c.positions[1].roles).toEqual(['Secretario', 'Tesorero']);
+    });
   });
 
-  it('registra 12 filas con el mismo ballot_id y bloquea la estación', () => {
+  it('registra 6 filas con el mismo ballot_id y bloquea la estación', () => {
     const ballotId = newBallotId();
     const res = t.kioskOk('submit', token, { ballotId, electionId: ballot.election.id, selections: fullSelections(ballot) });
     expect(res).toEqual({ registered: true, duplicate: false });
     const votes = t.table('Votes');
-    expect(votes).toHaveLength(12);
+    expect(votes).toHaveLength(6);
     expect(new Set(votes.map((v) => v.ballot_id))).toEqual(new Set([ballotId]));
     expect(t.kioskOk('status', token).device.status).toBe('LOCKED');
   });
@@ -128,19 +139,19 @@ describe('votación', () => {
     t.kioskOk('submit', token, payload);
     const again = t.kioskOk('submit', token, payload);
     expect(again.duplicate).toBe(true);
-    expect(t.table('Votes')).toHaveLength(12);
+    expect(t.table('Votes')).toHaveLength(6);
   });
 
   it('una estación bloqueada no puede votar otra papeleta', () => {
     t.kioskOk('submit', token, { ballotId: newBallotId(), selections: fullSelections(ballot) });
     const res = t.kiosk('submit', token, { ballotId: newBallotId(), selections: fullSelections(ballot, 1) });
     expect(res.error.code).toBe('DEVICE_NOT_READY');
-    expect(t.table('Votes')).toHaveLength(12);
+    expect(t.table('Votes')).toHaveLength(6);
   });
 
   it('rechaza papeletas incompletas', () => {
     const selections = fullSelections(ballot);
-    delete selections['JOV-TESO'];
+    delete selections['JOV-SECR'];
     const res = t.kiosk('submit', token, { ballotId: newBallotId(), selections });
     expect(res.error.code).toBe('VALIDATION');
     expect(t.table('Votes')).toHaveLength(0);
@@ -185,12 +196,12 @@ describe('votación', () => {
       t.kioskOk('submit', token, { ballotId, selections: fullSelections(ballot, i) });
     }
     const order = t.table('Votes').map((v) => v.ballot_id);
-    expect(order).toHaveLength(300);
-    // Contiguas: cada papeleta ocupa un bloque de 12 filas.
-    for (let i = 0; i < order.length; i += 12) {
-      expect(new Set(order.slice(i, i + 12)).size).toBe(1);
+    expect(order).toHaveLength(150);
+    // Contiguas: cada papeleta ocupa un bloque de 6 filas.
+    for (let i = 0; i < order.length; i += 6) {
+      expect(new Set(order.slice(i, i + 6)).size).toBe(1);
     }
-    const sheetOrder = order.filter((_, i) => i % 12 === 0);
+    const sheetOrder = order.filter((_, i) => i % 6 === 0);
     expect(sheetOrder).not.toEqual(ids); // probabilidad de falso positivo ≈ 1/25!
   });
 
@@ -217,7 +228,18 @@ describe('elección y candidatos', () => {
   it('no abre la votación si faltan candidatos', () => {
     const res = t.admin('setElectionStatus', { status: 'OPEN' });
     expect(res.error.code).toBe('VALIDATION');
-    expect(res.error.message).toMatch(/Presidente/);
+    expect(res.error.message).toMatch(/Presidente y Vicepresidente/);
+  });
+
+  it('cada votación necesita al menos 2 candidatos para poder abrir', () => {
+    for (const pos of t.table('Positions')) {
+      t.adminOk('createCandidate', { name: `Único ${pos.id}`, positionId: pos.id });
+    }
+    expect(t.admin('setElectionStatus', { status: 'OPEN' }).error.message).toMatch(/mínimo 2/);
+    for (const pos of t.table('Positions')) {
+      t.adminOk('createCandidate', { name: `Segundo ${pos.id}`, positionId: pos.id });
+    }
+    expect(t.adminOk('setElectionStatus', { status: 'OPEN' }).status).toBe('OPEN');
   });
 
   it('CRUD de candidatos solo en DRAFT', () => {
@@ -274,7 +296,7 @@ describe('elección y candidatos', () => {
     const results = t.adminOk('getResults');
     expect(results.election.name).toBe('Elección real');
     expect(results.ballots).toBe(0);
-    expect(t.table('Candidates')).toHaveLength(72);
+    expect(t.table('Candidates')).toHaveLength(48);
   });
 });
 
@@ -301,7 +323,7 @@ describe('resultados', () => {
     expect(res.categories).toBeUndefined();
   });
 
-  it('visibles al cerrar, con conteo, porcentaje y ganador', () => {
+  it('el más votado es Presidente y el segundo Vicepresidente', () => {
     vote(0);
     vote(0);
     vote(1);
@@ -310,10 +332,37 @@ describe('resultados', () => {
     expect(res.visible).toBe(true);
     expect(res.ballots).toBe(3);
     const pres = res.categories[0].positions[0];
-    expect(pres.candidates[0].votes).toBe(2);
-    expect(pres.candidates[0].pct).toBe(66.7);
-    expect(pres.winnerIds).toEqual([pres.candidates[0].id]);
+    const [first, second] = pres.candidates;
+    expect([first.votes, first.pct, second.votes]).toEqual([2, 66.7, 1]);
+    expect(pres.seats).toEqual([
+      { role: 'Presidente', candidateIds: [first.id], tie: false },
+      { role: 'Vicepresidente', candidateIds: [second.id], tie: false },
+    ]);
+    expect(pres.winnerIds).toEqual([first.id, second.id]);
     expect(pres.tie).toBe(false);
+    const secr = res.categories[0].positions[1];
+    expect(secr.seats.map((s) => s.role)).toEqual(['Secretario', 'Tesorero']);
+  });
+
+  it('empate por el segundo lugar: Vicepresidente en empate, Presidente definido', () => {
+    vote(0);
+    vote(0);
+    vote(1);
+    vote(2);
+    t.adminOk('setElectionStatus', { status: 'CLOSED' });
+    const pres = t.adminOk('getResults').categories[0].positions[0];
+    expect(pres.seats[0]).toMatchObject({ role: 'Presidente', tie: false });
+    expect(pres.seats[1]).toMatchObject({ role: 'Vicepresidente', tie: true });
+    expect(pres.seats[1].candidateIds).toHaveLength(2);
+    expect(pres.tie).toBe(true);
+  });
+
+  it('sin votos para un segundo candidato, el segundo cargo queda vacío', () => {
+    vote(0);
+    t.adminOk('setElectionStatus', { status: 'CLOSED' });
+    const pres = t.adminOk('getResults').categories[0].positions[0];
+    expect(pres.seats[0].candidateIds).toHaveLength(1);
+    expect(pres.seats[1]).toEqual({ role: 'Vicepresidente', candidateIds: [], tie: false });
   });
 
   it('resultados en vivo opcionales', () => {
@@ -354,7 +403,46 @@ describe('resultados', () => {
     expect(t.admin('exportResults').error.code).toBe('RESULTS_HIDDEN');
     t.adminOk('setElectionStatus', { status: 'CLOSED' });
     expect(t.adminOk('exportResults').url).toContain('#gid=');
-    expect(t.holder.state.sheets.Resultados.length).toBeGreaterThan(36);
+    const rows = t.holder.state.sheets.Resultados;
+    expect(rows[0][6]).toBe('Cargo obtenido');
+    expect(rows.map((r) => r[6])).toEqual(expect.arrayContaining(['Presidente', 'Secretario']));
   });
 });
 
+
+describe('migración desde la estructura anterior de 4 cargos', () => {
+  const LEGACY = ['PRES', 'VICE', 'SECR', 'TESO'];
+  const NAMES = { PRES: 'Presidente', VICE: 'Vicepresidente', SECR: 'Secretario', TESO: 'Tesorero' };
+  function withLegacyPositions(t) {
+    const rows = [['id', 'name', 'category_id', 'sort']];
+    ['CAB', 'DAM', 'JOV'].forEach((c) => LEGACY.forEach((p, i) => rows.push([`${c}-${p}`, NAMES[p], c, String(i + 1)])));
+    t.holder.state.sheets.Positions = rows;
+  }
+
+  it('une Vicepresidente con Presidencia y Tesorero con Secretaría, conservando candidatos', () => {
+    const t = createTestServer();
+    withLegacyPositions(t);
+    t.holder.state.sheets.Candidates.push(
+      ['C1', t.table('Elections')[0].id, 'Ana', 'DAM', 'DAM-VICE', '', 'TRUE', ''],
+      ['C2', t.table('Elections')[0].id, 'Bea', 'DAM', 'DAM-TESO', '', 'TRUE', ''],
+    );
+    t.server.setupDatabase();
+    expect(t.table('Positions').map((p) => p.id)).toEqual(['CAB-PRES', 'CAB-SECR', 'DAM-PRES', 'DAM-SECR', 'JOV-PRES', 'JOV-SECR']);
+    expect(t.table('Positions')[0].roles).toBe('Presidente|Vicepresidente');
+    expect(t.table('Candidates').map((c) => [c.name, c.position_id])).toEqual([
+      ['Ana', 'DAM-PRES'],
+      ['Bea', 'DAM-SECR'],
+    ]);
+  });
+
+  it('no migra si ya hay votos con la estructura anterior (nunca toca votos)', () => {
+    const t = createTestServer();
+    withLegacyPositions(t);
+    t.holder.state.sheets.Votes.push(['V1', 'B1', 'E1', 'CAB', 'CAB-VICE', 'C9', '2026-01-01']);
+    const before = JSON.stringify(t.holder.state.sheets.Votes);
+    t.server.setupDatabase();
+    expect(t.table('Positions').some((p) => p.id === 'CAB-VICE')).toBe(true);
+    expect(JSON.stringify(t.holder.state.sheets.Votes)).toBe(before);
+    expect(t.logs.join('\n')).toMatch(/no se migró/);
+  });
+});

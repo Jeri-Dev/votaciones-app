@@ -30,6 +30,7 @@ function buildBallotStructure_(electionId, includeInactive) {
           return {
             id: p.id,
             name: p.name,
+            roles: positionRoles_(p),
             candidates: candidates
               .filter(function (c) { return c.position_id === p.id; })
               .sort(function (a, b) { return a.name.localeCompare(b.name, 'es'); })
@@ -144,8 +145,8 @@ function seedTestData_() {
     let count = 0;
     readTable_('Positions').forEach(function (pos) {
       const pool = names[pos.category_id] || [];
-      const offset = (Number(pos.sort) - 1) * 3;
-      pool.slice(offset, offset + 3).forEach(function (name) {
+      const offset = (Number(pos.sort) - 1) * 4;
+      pool.slice(offset, offset + 4).forEach(function (name) {
         appendRecord_('Candidates', {
           id: shortId_('C'),
           election_id: e.id,

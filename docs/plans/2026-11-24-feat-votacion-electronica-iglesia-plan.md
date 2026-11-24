@@ -249,3 +249,10 @@ Implementado según el plan, con estos ajustes:
 - **Desbloqueo:** 3 toques seguidos en la esquina superior izquierda (160 px, menos de 0,7 s entre toques), en `src/utils/unlockSequence.js`.
 - **Nueva vista `#/pantalla`:** resultados en grande sin sidebar, para proyector. Usa la misma llave del panel. `App.jsx` copia el hash de `google.script.url.getLocation()` al iframe para que el enlace directo funcione en Apps Script. El dashboard incluye `appUrl` para abrirla en otra pestaña.
 
+## Cargos por orden de votos (2026-11-24)
+
+- **Votaciones:** por directiva hay 2, Presidencia (1.º Presidente, 2.º Vicepresidente) y Secretaría (1.º Secretario, 2.º Tesorero). Cada votante marca 1 candidato por votación: 6 selecciones por papeleta.
+- **Datos:** `Positions` tiene la columna nueva `roles` ("Presidente|Vicepresidente"). `assignSeats_` reparte los cargos por orden de votos y marca un empate por cargo; `seatLabel_` alimenta la exportación.
+- **Mínimo de candidatos:** para abrir la votación, cada votación necesita al menos 2 candidatos activos.
+- **Migración:** `setupDatabase` migra la estructura anterior de 4 cargos (VICE→PRES, TESO→SECR, conservando candidatos) solo si no hay votos que la usen. Nunca toca la hoja Votes.
+

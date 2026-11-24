@@ -51,7 +51,10 @@ export function ReviewScreen() {
             <ChevronLeft className="size-6 sm:size-8" /> Cambiar
           </Button>
           <Button variant="success" size="xl" onClick={submit} className="shadow-lg shadow-green-900/20">
-            <Check className="size-6 sm:size-8" strokeWidth={3} /> Confirmar<span className="hidden sm:inline">&nbsp;mi voto</span>
+            <Check className="size-6 sm:size-8" strokeWidth={3} />
+            <span>
+              Confirmar<span className="hidden sm:inline"> mi voto</span>
+            </span>
           </Button>
         </div>
       </div>

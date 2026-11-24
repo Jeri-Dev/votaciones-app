@@ -8,16 +8,16 @@ import { ResultBars, StatCard } from '../components/dashboard/widgets.jsx';
 import { directivaStyle } from '../components/voting/directivas.js';
 import { Button, Card, Spinner } from '../components/shared/ui.jsx';
 import { downloadCsv, resultsToRows, toCsv } from '../utils/csv.js';
+import { seatSummary } from '../utils/seats.js';
 import { openExternal } from '../services/googleScript.js';
 import { OpenBigScreenButton } from '../components/admin/OpenBigScreenButton.jsx';
 
 const RESULTS_POLL_MS = 4000;
 
 function winnersSummary(cat) {
-  return cat.positions.map((pos) => {
-    const names = pos.candidates.filter((c) => pos.winnerIds.includes(c.id)).map((c) => c.name);
-    return { id: pos.id, position: pos.name, names, tie: pos.tie };
-  });
+  return cat.positions.flatMap((pos) =>
+    seatSummary(pos).map((s) => ({ id: `${pos.id}-${s.role}`, position: s.role, names: s.names, tie: s.tie })),
+  );
 }
 
 export default function ResultsPage() {
@@ -102,7 +102,7 @@ export default function ResultsPage() {
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{w.position}</p>
                       <p className={`mt-0.5 flex items-center gap-1.5 font-semibold ${s.text}`}>
                         <Trophy className="size-4 shrink-0" />
-                        {w.names.length ? w.names.join(' / ') : '—'}
+                        {w.names.length ? w.names.join(' y ') : '—'}
                         {w.tie && <span className="text-xs text-amber-700">(empate)</span>}
                       </p>
                     </div>

@@ -37,20 +37,49 @@ describe('csv', () => {
   it('incluye BOM UTF-8 para Excel', () => {
     expect(toCsv([['a', 'b']])).toBe('﻿a,b');
   });
-  it('marca ganadores y empates', () => {
+  it('indica el cargo obtenido (1.º y 2.º) y los empates', () => {
     const rows = resultsToRows({
       election: { name: 'E' },
-      ballots: 2,
+      ballots: 4,
       categories: [
         {
           name: 'Damas',
           positions: [
-            { name: 'Presidente', winnerIds: ['A', 'B'], tie: true, candidates: [{ id: 'A', name: 'Ana', votes: 1, pct: 50 }, { id: 'B', name: 'Bea', votes: 1, pct: 50 }] },
+            {
+              name: 'Presidente y Vicepresidente',
+              seats: [
+                { role: 'Presidente', candidateIds: ['A'], tie: false },
+                { role: 'Vicepresidente', candidateIds: ['B', 'C'], tie: true },
+              ],
+              candidates: [
+                { id: 'A', name: 'Ana', votes: 2, pct: 50 },
+                { id: 'B', name: 'Bea', votes: 1, pct: 25 },
+                { id: 'C', name: 'Cia', votes: 1, pct: 25 },
+              ],
+            },
           ],
         },
       ],
     });
-    expect(rows[1]).toEqual(['E', 'Damas', 'Presidente', 'Ana', 1, '50%', 'EMPATE']);
-    expect(rows.at(-1)).toEqual(['Papeletas válidas', 2, '', '', '', '', '']);
+    expect(rows[0][6]).toBe('Cargo obtenido');
+    expect(rows[1]).toEqual(['E', 'Damas', 'Presidente y Vicepresidente', 'Ana', 2, '50%', 'Presidente']);
+    expect(rows[2][6]).toBe('Empate: Vicepresidente');
+    expect(rows.at(-1)).toEqual(['Papeletas válidas', 4, '', '', '', '', '']);
+  });
+});
+
+describe('seatSummary', () => {
+  it('une un empate idéntico por los dos cargos en una sola entrada', async () => {
+    const { seatSummary } = await import('../src/utils/seats.js');
+    const pos = {
+      candidates: [{ id: 'A', name: 'Ana' }, { id: 'B', name: 'Bea' }],
+      seats: [
+        { role: 'Presidente', candidateIds: ['A', 'B'], tie: true },
+        { role: 'Vicepresidente', candidateIds: ['A', 'B'], tie: true },
+      ],
+    };
+    const s = seatSummary(pos);
+    expect(s).toHaveLength(1);
+    expect(s[0]).toMatchObject({ role: 'Presidente / Vicepresidente', names: ['Ana', 'Bea'], merged: true });
   });
 });
