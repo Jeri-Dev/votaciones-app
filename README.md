@@ -40,6 +40,7 @@ Panel staff ─┼─ google.script.run ─► Apps Script ─┤  Script Proper
 | `https://script.google.com/macros/s/…/exec` | Estación de votación (se abre en cada tablet) |
 | `https://script.google.com/macros/s/…/exec?view=admin&key=LLAVE` | Panel del staff (enlace secreto, sin login) |
 | `https://script.google.com/macros/s/…/exec?view=admin&key=LLAVE#/pantalla` | Resultados en grande, sin menús (para proyector o TV) |
+| `https://script.google.com/macros/s/…/exec?view=conteo` | **Conteo público**: solo el número de votos en grande y el tiempo de votación. Sin llave, nunca muestra resultados. |
 
 **Ciclo de una estación:**
 
@@ -149,6 +150,7 @@ En el editor ejecute la función **`mostrarDatosAdmin`** (archivo *Database.gs*)
 - **Enlace de las estaciones:** `https://script.google.com/macros/s/…/exec`
 - **Enlace del panel:** `https://script.google.com/macros/s/…/exec?view=admin&key=XXXXXXXX`
 - **Pantalla de resultados en grande:** `https://script.google.com/macros/s/…/exec?view=admin&key=XXXXXXXX#/pantalla`
+- **Conteo público (sin llave):** `https://script.google.com/macros/s/…/exec?view=conteo`
 
 Guarde el enlace del panel como marcador **solo** en los dispositivos del staff. Quien tenga ese enlace administra la elección.
 
@@ -171,6 +173,7 @@ Enlaces en Netlify (la llave es la misma que muestra `mostrarDatosAdmin`):
 | Estaciones de votación | `https://SU-SITIO.netlify.app/` |
 | Panel del staff | `https://SU-SITIO.netlify.app/?view=admin&key=XXXXXXXX` |
 | Pantalla de resultados | `https://SU-SITIO.netlify.app/?view=admin&key=XXXXXXXX#/pantalla` |
+| Conteo público (sin llave) | `https://SU-SITIO.netlify.app/?view=conteo` |
 
 Cómo funciona: la página llama a `doPost` de Apps Script con `fetch`. Esa función reenvía a las mismas `kioskApi`/`adminApi`, con las mismas validaciones y la misma llave. La petición va como `text/plain` para que el navegador no haga la consulta previa (preflight) CORS, que Apps Script no responde.
 

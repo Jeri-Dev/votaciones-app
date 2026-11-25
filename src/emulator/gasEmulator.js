@@ -210,7 +210,7 @@ export function createGasServices(holder, options = {}) {
   };
 }
 
-const EXPORTED = ['kioskApi', 'adminApi', 'doPost', 'setupDatabase', 'mostrarDatosAdmin', 'diagnostico', 'readTable_'];
+const EXPORTED = ['kioskApi', 'adminApi', 'publicApi', 'doPost', 'setupDatabase', 'mostrarDatosAdmin', 'diagnostico', 'readTable_'];
 
 /** Evalúa los archivos .gs (como hace Apps Script: un solo ámbito global compartido). */
 export function loadServer(sources, services) {

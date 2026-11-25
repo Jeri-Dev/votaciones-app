@@ -148,6 +148,29 @@ function appUrl_() {
 }
 
 /**
+ * Conteo para la pantalla pública: total de papeletas y tiempos de la elección. Nunca resultados.
+ * Se guarda 5 s en CacheService: aunque muchas pantallas lo consulten, la hoja Votes se lee
+ * como máximo una vez cada 5 s y no se frena la votación.
+ */
+const PUBLIC_COUNTER_CACHE_SECONDS = 5;
+
+function getPublicCounter_() {
+  const cache = cache_();
+  const cached = cache.get('public_counter');
+  let data = cached ? JSON.parse(cached) : null;
+  if (!data) {
+    const e = getActiveElection_();
+    data = {
+      election: e ? { name: e.name, status: e.status, opened_at: e.opened_at, closed_at: e.closed_at } : null,
+      ballots: e ? tallyBallots_(e.id).valid.length : 0,
+    };
+    cache.put('public_counter', JSON.stringify(data), PUBLIC_COUNTER_CACHE_SECONDS);
+  }
+  data.serverTime = nowIso_();
+  return data;
+}
+
+/**
  * Alternativa a la descarga CSV en el navegador: escribe los resultados en la hoja
  * "Resultados" del mismo documento y devuelve su enlace.
  */

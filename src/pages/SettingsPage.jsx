@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CirclePlus, Eye, Presentation, Save } from 'lucide-react';
-import { OpenBigScreenButton } from '../components/admin/OpenBigScreenButton.jsx';
+import { OpenBigScreenButton, OpenCounterButton } from '../components/admin/OpenBigScreenButton.jsx';
 import { useAdmin } from '../context/AdminContext.jsx';
 import { PageHeader } from '../components/admin/AdminLayout.jsx';
 import { Badge, Button, Card, Modal } from '../components/shared/ui.jsx';
@@ -181,7 +181,14 @@ export default function SettingsPage() {
               Vista a pantalla completa, sin menús, para un proyector o televisor. Se actualiza sola. Mientras los resultados
               estén ocultos muestra solo la participación.
             </p>
-            <OpenBigScreenButton variant="secondary" />
+            <div className="flex flex-wrap gap-2">
+              <OpenBigScreenButton variant="secondary" />
+              <OpenCounterButton />
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              <strong>Conteo público</strong> (<code>?view=conteo</code>): solo el número de votos y el tiempo de votación. No
+              necesita la llave y nunca muestra resultados; ideal para proyectar a la congregación.
+            </p>
           </Card>
         </div>
         <div className="lg:col-span-2">

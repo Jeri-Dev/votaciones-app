@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { Presentation } from 'lucide-react';
+import { Hash, Presentation } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext.jsx';
 import { isGasHosted, openExternal } from '../../services/googleScript.js';
 import { Button } from '../shared/ui.jsx';
@@ -25,6 +25,17 @@ export function OpenBigScreenButton({ variant = 'primary', size = 'md' }) {
   return (
     <Button variant={variant} size={size} icon={Presentation} onClick={open}>
       Pantalla de resultados
+    </Button>
+  );
+}
+
+/** Abre la pantalla de conteo público (…/?view=conteo), que no necesita llave. */
+export function OpenCounterButton({ variant = 'secondary', size = 'md' }) {
+  const { dashboard } = useAdmin();
+  const baseUrl = isGasHosted() ? dashboard?.appUrl : `${window.location.origin}${window.location.pathname}`;
+  return (
+    <Button variant={variant} size={size} icon={Hash} disabled={!baseUrl} onClick={() => openExternal(`${baseUrl}?view=conteo`)}>
+      Conteo público
     </Button>
   );
 }

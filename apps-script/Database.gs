@@ -136,6 +136,7 @@ function mostrarDatosAdmin() {
   const url = appUrl_();
   Logger.log('Enlace del panel del staff: ' + (url || '<URL de la app web>') + '?view=admin&key=' + key);
   Logger.log('Pantalla de resultados en grande: ' + (url || '<URL de la app web>') + '?view=admin&key=' + key + '#/pantalla');
+  Logger.log('Pantalla de conteo público (sin llave): ' + (url || '<URL de la app web>') + '?view=conteo');
   Logger.log('Enlace de las estaciones de votación: ' + (url || '<URL de la app web>'));
 }
 

@@ -64,7 +64,7 @@ const failRate = Number(new URLSearchParams(location.search).get('mockFail') || 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function mockCall(fn, args) {
-  if (fn !== 'kioskApi' && fn !== 'adminApi') throw new Error(`Función no expuesta: ${fn}`);
+  if (!['kioskApi', 'adminApi', 'publicApi'].includes(fn)) throw new Error(`Función no expuesta: ${fn}`);
   await delay(250 + Math.random() * 450);
   const fail = Math.random() < failRate;
   if (fail && Math.random() < 0.5) throw new Error('Fallo de red simulado (antes del servidor)');

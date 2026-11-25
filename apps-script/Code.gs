@@ -4,7 +4,8 @@
  * Funciones públicas (llamables con google.script.run, o por HTTP con doPost):
  *   kioskApi(action, deviceToken, payload)  → estaciones de votación
  *   adminApi(action, adminKey, payload)     → panel del staff (requiere ADMIN_KEY)
- *   doPost(e)                               → las dos anteriores por HTTP (frontend en Netlify)
+ *   publicApi(action)                       → pantalla de conteo público (solo el total, sin resultados)
+ *   doPost(e)                               → las anteriores por HTTP (frontend en Netlify)
  * Funciones de editor (protegidas con assertOwner_): setupDatabase, mostrarDatosAdmin, diagnostico.
  * Todo lo demás termina en "_" y es privado.
  */
@@ -48,6 +49,11 @@ const ADMIN_ACTIONS = {
   setShowLiveResults: function (p) { return setShowLiveResults_(p); },
 };
 
+// Sin autenticación: solo información que se puede mostrar en público (nunca resultados).
+const PUBLIC_ACTIONS = {
+  counter: function () { return getPublicCounter_(); },
+};
+
 function lookupAction_(table, action) {
   if (typeof action !== 'string' || !Object.prototype.hasOwnProperty.call(table, action)) {
     throw appError_('BAD_ACTION', 'Acción no permitida.');
@@ -68,14 +74,21 @@ function adminApi(action, adminKey, payload) {
   });
 }
 
+function publicApi(action) {
+  return respond_(function () {
+    return lookupAction_(PUBLIC_ACTIONS, action)();
+  });
+}
+
 /**
  * API HTTP para cuando el frontend está alojado fuera de Apps Script (p. ej. Netlify).
- * Body (Content-Type: text/plain, para evitar el preflight CORS): {"fn":"kioskApi"|"adminApi","args":[...]}
- * Solo expone las mismas dos funciones públicas; todo lo demás sigue siendo privado.
+ * Body (Content-Type: text/plain, para evitar el preflight CORS): {"fn":"kioskApi"|"adminApi"|"publicApi","args":[...]}
+ * Solo expone las mismas funciones públicas; todo lo demás sigue siendo privado.
  */
 const HTTP_API_ = {
   kioskApi: function (args) { return kioskApi(args[0], args[1], args[2]); },
   adminApi: function (args) { return adminApi(args[0], args[1], args[2]); },
+  publicApi: function (args) { return publicApi(args[0]); },
 };
 
 function doPost(e) {

@@ -5,6 +5,7 @@ import { deviceToken } from './services/deviceService.js';
 import { Spinner } from './components/shared/ui.jsx';
 import VotingPage from './pages/VotingPage.jsx';
 import AdminApp from './pages/AdminApp.jsx';
+import PublicCounterPage from './pages/PublicCounterPage.jsx';
 
 /** Se pidió el panel desde un navegador registrado como estación de votación. */
 function StationBlocksAdmin() {
@@ -23,9 +24,10 @@ function StationBlocksAdmin() {
 }
 
 /**
- * Una sola app, dos vistas:
+ * Una sola app, tres vistas:
  *   …/exec                       → estación de votación (kiosko)
  *   …/exec?view=admin&key=XXXX   → panel del staff
+ *   …/exec?view=conteo           → conteo público (solo el total, sin llave)
  * Una tablet ya registrada como estación nunca abre el panel.
  */
 export default function App() {
@@ -34,6 +36,10 @@ export default function App() {
   useEffect(() => {
     getLocation().then((loc) => {
       const p = loc.parameter || {};
+      if (p.view === 'conteo') {
+        setView({ name: 'counter' });
+        return;
+      }
       // En desarrollo todas las pestañas comparten localStorage, por eso no se aplica la regla.
       const isStation = !import.meta.env.DEV && Boolean(deviceToken.get());
       const requestsAdmin = p.view === 'admin' && Boolean(p.key);
@@ -58,5 +64,6 @@ export default function App() {
     );
   }
   if (view.name === 'station-blocks-admin') return <StationBlocksAdmin />;
+  if (view.name === 'counter') return <PublicCounterPage />;
   return view.name === 'admin' ? <AdminApp adminKey={view.key} /> : <VotingPage />;
 }
