@@ -8,6 +8,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Rutas públicas con nombre propio: sirven la misma app (index.html).
+[[redirects]]
+  from = "/public-candidatos"
+  to = "/index.html"
+  status = 200
+
 # La app no debe aparecer en buscadores ni incrustarse en otros sitios.
 [[headers]]
   for = "/*"

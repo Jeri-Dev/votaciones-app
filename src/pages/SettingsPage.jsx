@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CirclePlus, Eye, Presentation, Save } from 'lucide-react';
-import { OpenBigScreenButton, OpenCounterButton } from '../components/admin/OpenBigScreenButton.jsx';
+import { OpenBigScreenButton, OpenCandidatesButton, OpenCounterButton } from '../components/admin/OpenBigScreenButton.jsx';
 import { useAdmin } from '../context/AdminContext.jsx';
 import { PageHeader } from '../components/admin/AdminLayout.jsx';
 import { Badge, Button, Card, Modal } from '../components/shared/ui.jsx';
@@ -184,10 +184,13 @@ export default function SettingsPage() {
             <div className="flex flex-wrap gap-2">
               <OpenBigScreenButton variant="secondary" />
               <OpenCounterButton />
+              <OpenCandidatesButton />
             </div>
             <p className="mt-3 text-xs text-slate-500">
               <strong>Conteo público</strong> (<code>?view=conteo</code>): solo el número de votos y el tiempo de votación. No
-              necesita la llave y nunca muestra resultados; ideal para proyectar a la congregación.
+              necesita la llave y nunca muestra resultados; ideal para proyectar a la congregación.{' '}
+              <strong>Candidatos (público)</strong> (<code>/public-candidatos</code>): la lista de candidatos de cada
+              directiva, para compartir con la congregación antes de votar.
             </p>
           </Card>
         </div>

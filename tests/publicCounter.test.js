@@ -51,3 +51,30 @@ describe('tiempo de votación', () => {
     expect(clockOffset('2026-11-25T10:00:05.000Z', at('2026-11-25T10:00:00.000Z'))).toBe(5000);
   });
 });
+
+describe('publicApi candidates', () => {
+  it('lista candidatos activos por directiva y votación, sin votos ni resultados', () => {
+    const t = createTestServer();
+    t.adminOk('seedTestData');
+    const first = t.table('Candidates')[0];
+    t.adminOk('updateCandidate', { id: first.id, active: false });
+    const res = t.server.publicApi('candidates');
+    expect(res.ok).toBe(true);
+    const { election, categories } = res.data;
+    expect(Object.keys(election).sort()).toEqual(['description', 'name', 'status']);
+    expect(categories).toHaveLength(3);
+    expect(categories[0].positions[0].roles).toEqual(['Presidente', 'Vicepresidente']);
+    const all = categories.flatMap((c) => c.positions.flatMap((p) => p.candidates));
+    expect(all).toHaveLength(23); // 24 de ejemplo menos 1 desactivado
+    expect(all.some((c) => c.id === first.id)).toBe(false);
+    expect(JSON.stringify(res.data)).not.toMatch(/votes|pct|winner|seats/);
+  });
+
+  it('se actualiza al cambiar candidatos (invalida la caché)', () => {
+    const t = createTestServer();
+    expect(t.server.publicApi('candidates').data.categories.flatMap((c) => c.positions.flatMap((p) => p.candidates))).toHaveLength(0);
+    t.adminOk('createCandidate', { name: 'Ana Nueva', positionId: 'DAM-PRES' });
+    const names = t.server.publicApi('candidates').data.categories[1].positions[0].candidates.map((c) => c.name);
+    expect(names).toEqual(['Ana Nueva']);
+  });
+});

@@ -45,6 +45,29 @@ function buildBallotStructure_(electionId, includeInactive) {
   });
 }
 
+/**
+ * Lista pública de candidatos activos (pantalla /public-candidatos). Sin votos ni resultados.
+ * Se guarda 60 s en caché y se invalida al crear, editar o eliminar candidatos.
+ */
+const PUBLIC_CANDIDATES_CACHE_SECONDS = 60;
+
+function getPublicCandidates_() {
+  const cache = cache_();
+  const cached = cache.get('public_candidates');
+  if (cached) return JSON.parse(cached);
+  const e = getActiveElection_();
+  const data = {
+    election: e ? { name: e.name, description: e.description, status: e.status } : null,
+    categories: e ? buildBallotStructure_(e.id, false) : [],
+  };
+  cache.put('public_candidates', JSON.stringify(data), PUBLIC_CANDIDATES_CACHE_SECONDS);
+  return data;
+}
+
+function invalidatePublicCandidates_() {
+  cache_().remove('public_candidates');
+}
+
 function getCandidates_() {
   const e = requireActiveElection_();
   return {
@@ -87,6 +110,7 @@ function createCandidate_(payload) {
       active: 'TRUE',
       created_at: nowIso_(),
     });
+    invalidatePublicCandidates_();
     audit_('staff', 'CANDIDATE_CREATED', record.name + ' → ' + pos.id);
     return { id: record.id };
   });
@@ -112,6 +136,7 @@ function updateCandidate_(payload) {
     }
     if (payload.active !== undefined) c.active = payload.active ? 'TRUE' : 'FALSE';
     updateRecord_('Candidates', c);
+    invalidatePublicCandidates_();
     audit_('staff', 'CANDIDATE_UPDATED', c.name);
     return { id: c.id };
   });
@@ -125,6 +150,7 @@ function deleteCandidate_(payload) {
     const hasVotes = readTable_('Votes').some(function (v) { return v.candidate_id === c.id; });
     if (hasVotes) throw appError_('CONFLICT', 'Este candidato tiene votos registrados y no se puede eliminar.');
     deleteRecord_('Candidates', c);
+    invalidatePublicCandidates_();
     audit_('staff', 'CANDIDATE_DELETED', c.name);
     return { id: c.id };
   });
@@ -160,6 +186,7 @@ function seedTestData_() {
         count++;
       });
     });
+    invalidatePublicCandidates_();
     audit_('staff', 'TEST_DATA_LOADED', count + ' candidatos de ejemplo');
     return { count: count };
   });

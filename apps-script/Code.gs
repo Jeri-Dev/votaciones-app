@@ -4,7 +4,7 @@
  * Funciones públicas (llamables con google.script.run, o por HTTP con doPost):
  *   kioskApi(action, deviceToken, payload)  → estaciones de votación
  *   adminApi(action, adminKey, payload)     → panel del staff (requiere ADMIN_KEY)
- *   publicApi(action)                       → pantalla de conteo público (solo el total, sin resultados)
+ *   publicApi(action)                       → pantallas públicas: conteo y candidatos (nunca resultados)
  *   doPost(e)                               → las anteriores por HTTP (frontend en Netlify)
  * Funciones de editor (protegidas con assertOwner_): setupDatabase, mostrarDatosAdmin, diagnostico.
  * Todo lo demás termina en "_" y es privado.
@@ -52,6 +52,7 @@ const ADMIN_ACTIONS = {
 // Sin autenticación: solo información que se puede mostrar en público (nunca resultados).
 const PUBLIC_ACTIONS = {
   counter: function () { return getPublicCounter_(); },
+  candidates: function () { return getPublicCandidates_(); },
 };
 
 function lookupAction_(table, action) {

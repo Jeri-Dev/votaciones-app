@@ -96,6 +96,7 @@ function createElection_(payload) {
     }
     // Las estaciones quedan bloqueadas hasta que el staff las habilite.
     lockAllDevices_();
+    invalidatePublicCandidates_();
     audit_('staff', 'ELECTION_CREATED', name + (copied ? ' (' + copied + ' candidatos copiados)' : ''));
     return publicElection_(created);
   });
@@ -133,6 +134,7 @@ function setElectionStatus_(payload) {
     }
     e.status = next;
     updateRecord_('Elections', e);
+    invalidatePublicCandidates_();
     audit_('staff', 'ELECTION_' + next, e.name);
     return publicElection_(e);
   });

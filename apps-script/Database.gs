@@ -137,6 +137,7 @@ function mostrarDatosAdmin() {
   Logger.log('Enlace del panel del staff: ' + (url || '<URL de la app web>') + '?view=admin&key=' + key);
   Logger.log('Pantalla de resultados en grande: ' + (url || '<URL de la app web>') + '?view=admin&key=' + key + '#/pantalla');
   Logger.log('Pantalla de conteo público (sin llave): ' + (url || '<URL de la app web>') + '?view=conteo');
+  Logger.log('Candidatos (sin llave): ' + (url || '<URL de la app web>') + '?view=candidatos  (en Netlify: /public-candidatos)');
   Logger.log('Enlace de las estaciones de votación: ' + (url || '<URL de la app web>'));
 }
 

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { Hash, Presentation } from 'lucide-react';
+import { Hash, Presentation, UsersRound } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext.jsx';
 import { isGasHosted, openExternal } from '../../services/googleScript.js';
 import { Button } from '../shared/ui.jsx';
@@ -25,6 +25,17 @@ export function OpenBigScreenButton({ variant = 'primary', size = 'md' }) {
   return (
     <Button variant={variant} size={size} icon={Presentation} onClick={open}>
       Pantalla de resultados
+    </Button>
+  );
+}
+
+/** Abre la lista pública de candidatos (/public-candidatos; en Apps Script, ?view=candidatos). */
+export function OpenCandidatesButton({ variant = 'secondary', size = 'md' }) {
+  const { dashboard } = useAdmin();
+  const url = isGasHosted() ? dashboard?.appUrl && `${dashboard.appUrl}?view=candidatos` : `${window.location.origin}/public-candidatos`;
+  return (
+    <Button variant={variant} size={size} icon={UsersRound} disabled={!url} onClick={() => openExternal(url)}>
+      Candidatos (público)
     </Button>
   );
 }

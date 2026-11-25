@@ -41,6 +41,7 @@ Panel staff ─┼─ google.script.run ─► Apps Script ─┤  Script Proper
 | `https://script.google.com/macros/s/…/exec?view=admin&key=LLAVE` | Panel del staff (enlace secreto, sin login) |
 | `https://script.google.com/macros/s/…/exec?view=admin&key=LLAVE#/pantalla` | Resultados en grande, sin menús (para proyector o TV) |
 | `https://script.google.com/macros/s/…/exec?view=conteo` | **Conteo público**: solo el número de votos en grande y el tiempo de votación. Sin llave, nunca muestra resultados. |
+| `https://script.google.com/macros/s/…/exec?view=candidatos` | **Candidatos (público)**: lista de candidatos por directiva y votación, con foto o iniciales. Sin llave. En Netlify: `/public-candidatos`. |
 
 **Ciclo de una estación:**
 
@@ -151,6 +152,7 @@ En el editor ejecute la función **`mostrarDatosAdmin`** (archivo *Database.gs*)
 - **Enlace del panel:** `https://script.google.com/macros/s/…/exec?view=admin&key=XXXXXXXX`
 - **Pantalla de resultados en grande:** `https://script.google.com/macros/s/…/exec?view=admin&key=XXXXXXXX#/pantalla`
 - **Conteo público (sin llave):** `https://script.google.com/macros/s/…/exec?view=conteo`
+- **Candidatos (sin llave):** `https://script.google.com/macros/s/…/exec?view=candidatos`
 
 Guarde el enlace del panel como marcador **solo** en los dispositivos del staff. Quien tenga ese enlace administra la elección.
 
@@ -174,6 +176,7 @@ Enlaces en Netlify (la llave es la misma que muestra `mostrarDatosAdmin`):
 | Panel del staff | `https://SU-SITIO.netlify.app/?view=admin&key=XXXXXXXX` |
 | Pantalla de resultados | `https://SU-SITIO.netlify.app/?view=admin&key=XXXXXXXX#/pantalla` |
 | Conteo público (sin llave) | `https://SU-SITIO.netlify.app/?view=conteo` |
+| Candidatos (sin llave) | `https://SU-SITIO.netlify.app/public-candidatos` |
 
 Cómo funciona: la página llama a `doPost` de Apps Script con `fetch`. Esa función reenvía a las mismas `kioskApi`/`adminApi`, con las mismas validaciones y la misma llave. La petición va como `text/plain` para que el navegador no haga la consulta previa (preflight) CORS, que Apps Script no responde.
 
