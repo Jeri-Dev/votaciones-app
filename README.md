@@ -176,6 +176,31 @@ Cómo funciona: la página llama a `doPost` de Apps Script con `fetch`. Esa func
 
 > **Probar en local contra Google real:** copie `.env.example` a `.env.local`, ponga su URL `/exec` y ejecute `npm run dev`. Sin ese archivo, `npm run dev` usa el emulador.
 
+### 3.9 Instalar como app (PWA)
+
+En Netlify, la app es instalable como PWA:
+
+- **Pantalla completa:** se abre sin la barra del navegador. Es ideal para las tablets de votación.
+- **Pantalla siempre encendida:** mientras la estación está abierta, la pantalla no se apaga (si el navegador lo permite).
+- **Abre sin internet:** muestra "Sin conexión" y se reconecta sola. Los votos **nunca** se guardan en la caché: siempre se envían a Google, y una papeleta pendiente se reintenta con el mismo identificador, sin duplicarse.
+
+**Instalar en cada tablet, antes de registrarla:**
+
+| Dispositivo | Cómo |
+|---|---|
+| Android (Chrome) | Abra `https://SU-SITIO.netlify.app/`. En la pantalla *Registrar estación* toque **Instalar app** (o menú ⋮ → *Instalar aplicación*). |
+| iPad / iPhone (Safari) | Toque **Compartir** → **Agregar a inicio**. |
+
+Después abra la app desde el icono de la pantalla de inicio y registre la estación **ahí**. En iPad, la app instalada no comparte datos con Safari: si registra en Safari y luego instala, tendrá que registrarla otra vez.
+
+El panel del staff se usa desde el navegador normal, con su enlace secreto. La app instalada siempre abre la estación de votación.
+
+**Actualizaciones:** cada vez que la app abre con internet, descarga la versión más reciente, así que no hay que reinstalar.
+
+> La PWA solo funciona en el sitio publicado (Netlify). Si la app se sirve desde Apps Script, los navegadores no permiten instalarla.
+
+Los iconos están en `public/icons/`. Si cambia el diseño (`icon.svg`, `icon-maskable.svg`), regenere los PNG con `node scripts/generate-icons.cjs <ruta-a-playwright>`.
+
 ---
 
 ## 4. Actualizar la app después de cambios
@@ -214,7 +239,8 @@ Hágalo unos días antes, con 2–3 tablets reales:
 ### Antes de abrir
 
 - [ ] Tablets **cargadas** y conectadas al cargador si es posible.
-- [ ] **Bloqueo automático de pantalla desactivado** (Ajustes → Pantalla → Tiempo de espera: máximo / nunca).
+- [ ] **Bloqueo automático de pantalla desactivado** (Ajustes → Pantalla → Tiempo de espera: máximo / nunca). La app instalada ya pide mantener la pantalla encendida, pero no todos los dispositivos lo respetan.
+- [ ] Si usa Netlify: la app **instalada** en cada tablet (sección 3.9).
 - [ ] Wi‑Fi estable; tenga un **teléfono con datos como punto de acceso** de respaldo.
 - [ ] Abra el enlace de las estaciones en cada tablet y **fíjelo**:
   - **Android:** Ajustes → Seguridad → *Fijar aplicaciones / Fijar pantalla*; luego Recientes → icono de la app → *Fijar*.

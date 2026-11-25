@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Tablet } from 'lucide-react';
 import { useKiosk } from '../../context/KioskContext.jsx';
 import { Button } from '../shared/ui.jsx';
+import { InstallHint } from './InstallHint.jsx';
 
 /** Primer uso de una tablet: el staff le pone un nombre para identificarla en el panel. */
 export function RegisterStation() {
@@ -26,6 +27,7 @@ export function RegisterStation() {
   return (
     <div className="flex min-h-full items-center justify-center bg-navy-50 p-6">
       <form className="w-full max-w-lg animate-fade-in rounded-3xl bg-white p-8 shadow-xl" onSubmit={submit}>
+        <InstallHint />
         <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-navy-100 text-navy-800">
           <Tablet className="size-9" />
         </div>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fondo completo: Android/iOS recortan la forma. El dibujo queda dentro de la zona segura (80 %). -->
+  <rect width="512" height="512" fill="#0b2545"/>
+  <g transform="translate(131 124) scale(10.4)" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+    <path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z" stroke="#ffffff"/>
+    <path d="M22 19H2" stroke="#ffffff"/>
+    <path d="m9 12 2 2 4-4" stroke="#22c55e" stroke-width="2.4"/>
+  </g>
+</svg>

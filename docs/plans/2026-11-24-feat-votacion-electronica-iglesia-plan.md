@@ -256,3 +256,10 @@ Implementado según el plan, con estos ajustes:
 - **Mínimo de candidatos:** para abrir la votación, cada votación necesita al menos 2 candidatos activos.
 - **Migración:** `setupDatabase` migra la estructura anterior de 4 cargos (VICE→PRES, TESO→SECR, conservando candidatos) solo si no hay votos que la usen. Nunca toca la hoja Votes.
 
+## PWA (2026-11-25)
+
+- **Archivos:** `public/manifest.webmanifest` (display fullscreen/standalone, iconos any + maskable), `public/sw.js` propio y `src/pwa.js` (registro, `useInstallPrompt`, `useWakeLock`).
+- **Service worker:** solo GET del mismo origen. Navegación: red primero y caché si no hay conexión. Iconos: caché primero. Nunca intercepta Apps Script; verificado que la caché no contiene llamadas a `macros`.
+- **Dónde se activa:** se registra solo en producción y fuera de Apps Script. `netlify.toml` sirve `sw.js`, el manifiesto e `index.html` con `no-cache`.
+- **Instalación y pantalla:** la pantalla de registro de la estación sugiere instalar antes de registrar (en iOS la app instalada no comparte almacenamiento con Safari). Wake Lock mantiene la pantalla encendida en la estación.
+

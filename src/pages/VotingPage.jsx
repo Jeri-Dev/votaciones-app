@@ -2,6 +2,7 @@ import { Ban, CircleAlert, CirclePause, CircleX, LoaderCircle, WifiOff } from 'l
 import { KioskProvider, useKiosk } from '../context/KioskContext.jsx';
 import { VOTER_PHASES } from '../context/kioskReducer.js';
 import { useIdleTimer } from '../hooks/useIdleTimer.js';
+import { useWakeLock } from '../pwa.js';
 import { StatusScreen } from '../components/voting/StatusScreen.jsx';
 import { LockScreen } from '../components/voting/LockScreen.jsx';
 import { RegisterStation } from '../components/voting/RegisterStation.jsx';
@@ -68,6 +69,8 @@ function FailedScreen() {
 
 function KioskScreens() {
   const { state, idleReset } = useKiosk();
+  // La tablet no debe apagar la pantalla entre votantes.
+  useWakeLock(true);
   const voting = state.phase === 'ballot' || state.phase === 'review';
   const { warning } = useIdleTimer({ warnMs: IDLE_WARN_MS, timeoutMs: IDLE_RESET_MS, onTimeout: idleReset, enabled: voting });
 
