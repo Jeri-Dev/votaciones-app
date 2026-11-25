@@ -446,3 +446,56 @@ describe('migración desde la estructura anterior de 4 cargos', () => {
     expect(t.logs.join('\n')).toMatch(/no se migró/);
   });
 });
+
+describe('limpieza de datos (funciones de editor)', () => {
+  function withVotes() {
+    const t = createTestServer();
+    const token = openElectionWithDevice(t);
+    const ballot = t.kioskOk('ballot', token);
+    t.kioskOk('submit', token, { ballotId: newBallotId(), selections: fullSelections(ballot) });
+    return { t, token };
+  }
+
+  it('no limpia con la votación abierta', () => {
+    const { t } = withVotes();
+    expect(() => t.server.limpiarVotos()).toThrow(/abierta/);
+    expect(() => t.server.limpiarTodo()).toThrow(/abierta/);
+    expect(t.table('Votes')).toHaveLength(6);
+  });
+
+  it('solo el dueño desde el editor', () => {
+    const { t } = withVotes();
+    t.adminOk('setElectionStatus', { status: 'CLOSED' });
+    const anon = createTestServer({ activeUser: '', skipSetup: true });
+    anon.holder.state = t.holder.state;
+    expect(() => anon.server.limpiarTodo()).toThrow(/editor/);
+  });
+
+  it('limpiarVotos: borra votos, conserva candidatos y estaciones, elección en preparación', () => {
+    const { t, token } = withVotes();
+    t.adminOk('setElectionStatus', { status: 'CLOSED' });
+    t.server.limpiarVotos();
+    expect(t.table('Votes')).toHaveLength(0);
+    expect(t.table('Candidates')).toHaveLength(24);
+    expect(t.kioskOk('status', token).device.status).toBe('LOCKED');
+    expect(t.adminOk('dashboard').election.status).toBe('DRAFT');
+    expect(t.server.publicApi('counter').data.ballots).toBe(0);
+    // Se puede volver a abrir y votar
+    expect(t.adminOk('setElectionStatus', { status: 'OPEN' }).status).toBe('OPEN');
+  });
+
+  it('limpiarTodo: deja la base vacía con una elección nueva y conserva directivas y llave', () => {
+    const { t, token } = withVotes();
+    t.adminOk('setElectionStatus', { status: 'CLOSED' });
+    const key = t.holder.state.props.ADMIN_KEY;
+    t.server.limpiarTodo();
+    for (const name of ['Votes', 'Candidates', 'Devices']) expect(t.table(name)).toHaveLength(0);
+    expect(t.table('Elections')).toHaveLength(1);
+    expect(t.table('Elections')[0].status).toBe('DRAFT');
+    expect(t.table('Positions')).toHaveLength(6);
+    expect(t.holder.state.props.ADMIN_KEY).toBe(key);
+    expect(t.kiosk('status', token).error.code).toBe('UNREGISTERED');
+    expect(t.server.publicApi('candidates').data.categories[0].positions[0].candidates).toHaveLength(0);
+  });
+});
+

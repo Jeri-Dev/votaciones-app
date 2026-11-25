@@ -141,6 +141,74 @@ function mostrarDatosAdmin() {
   Logger.log('Enlace de las estaciones de votación: ' + (url || '<URL de la app web>'));
 }
 
+/**
+ * BORRA los votos y el registro de actividad, y deja la elección actual "En preparación"
+ * para volver a empezar. Conserva candidatos y estaciones (las estaciones quedan bloqueadas).
+ * Ideal después de un ensayo. Solo desde el editor; no corre con la votación abierta o en pausa.
+ */
+function limpiarVotos() {
+  assertOwner_();
+  return withLock_(function () {
+    const e = assertCanClean_();
+    const votes = clearTable_('Votes');
+    clearTable_('AuditLog');
+    if (e) {
+      e.status = 'DRAFT';
+      e.opened_at = '';
+      e.closed_at = '';
+      updateRecord_('Elections', e);
+    }
+    readTable_('Devices').forEach(function (d) {
+      if (d.status !== 'DISABLED') setDeviceStatus_(d, 'LOCKED', false);
+    });
+    afterClean_();
+    audit_('system', 'DATA_CLEARED', 'Votos borrados (' + votes + ' filas)');
+    Logger.log('Listo: se borraron ' + votes + ' filas de votos. Candidatos y estaciones se conservan; la elección quedó En preparación.');
+  });
+}
+
+/**
+ * BORRA TODO: votos, candidatos, estaciones, elecciones y actividad. Crea una elección nueva vacía.
+ * Conserva las directivas/votaciones (Categories, Positions) y la llave del panel.
+ * Las tablets tendrán que registrarse otra vez. Solo desde el editor; no corre con la votación abierta.
+ */
+function limpiarTodo() {
+  assertOwner_();
+  return withLock_(function () {
+    assertCanClean_();
+    const counts = ['Votes', 'Candidates', 'Devices', 'Elections', 'AuditLog'].map(function (name) {
+      return name + ': ' + clearTable_(name);
+    });
+    props_().deleteProperty('ACTIVE_ELECTION_ID');
+    props_().deleteProperty('SHOW_LIVE_RESULTS');
+    createElectionRecord_('Elección de directivas ' + new Date().getFullYear(), '');
+    afterClean_();
+    audit_('system', 'DATA_CLEARED', 'Base de datos borrada por completo');
+    Logger.log('Listo: base de datos vacía (' + counts.join(', ') + '). Se creó una elección nueva en preparación.');
+  });
+}
+
+function assertCanClean_() {
+  const e = getActiveElection_();
+  if (e && (e.status === 'OPEN' || e.status === 'PAUSED')) {
+    throw new Error('La votación está abierta o en pausa. Ciérrela desde el panel antes de limpiar.');
+  }
+  return e;
+}
+
+/** Vacía las filas de datos de una hoja (deja los encabezados). Devuelve cuántas filas tenía. */
+function clearTable_(name) {
+  const sh = sheet_(name);
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return 0;
+  sh.getRange(2, 1, lastRow - 1, SCHEMA[name].length).clearContent();
+  return lastRow - 1;
+}
+
+function afterClean_() {
+  cache_().removeAll(['public_counter', 'public_candidates']);
+}
+
 /** Revisión de solo lectura: confirma hojas, propiedades y conteos. */
 function diagnostico() {
   assertOwner_();

@@ -50,6 +50,7 @@ const ACTIONS = {
   DEVICE_DISABLED: 'Estación deshabilitada',
   DEVICE_RESET: 'Estación reiniciada',
   BALLOT_CAST: 'Papeleta registrada',
+  DATA_CLEARED: 'Datos borrados desde el editor',
   ACCESS_DENIED: 'Acceso denegado al panel',
   RESULTS_EXPORTED: 'Resultados exportados',
   LIVE_RESULTS_ON: 'Resultados en vivo activados',

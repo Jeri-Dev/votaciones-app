@@ -45,6 +45,15 @@ function makeRange(holder, name, row, col, numRows, numCols) {
     setFontWeight: () => range,
     setBackground: () => range,
     setFontColor: () => range,
+    clearContent() {
+      const d = data();
+      for (let r = 0; r < numRows; r++) {
+        const idx = row - 1 + r;
+        if (!Array.isArray(d[idx])) continue;
+        for (let c = 0; c < numCols; c++) d[idx][col - 1 + c] = '';
+      }
+      return range;
+    },
   };
   return range;
 }
@@ -121,6 +130,9 @@ export function createGasServices(holder, options = {}) {
     },
     put(key, value, seconds = 600) {
       holder.state.cache[key] = { value: String(value), exp: now() + Math.min(seconds, 21600) * 1000 };
+    },
+    removeAll(keys) {
+      keys.forEach((k) => delete holder.state.cache[k]);
     },
     remove(key) {
       delete holder.state.cache[key];
@@ -210,7 +222,7 @@ export function createGasServices(holder, options = {}) {
   };
 }
 
-const EXPORTED = ['kioskApi', 'adminApi', 'publicApi', 'doPost', 'setupDatabase', 'mostrarDatosAdmin', 'diagnostico', 'readTable_'];
+const EXPORTED = ['kioskApi', 'adminApi', 'publicApi', 'doPost', 'setupDatabase', 'mostrarDatosAdmin', 'diagnostico', 'limpiarVotos', 'limpiarTodo', 'readTable_'];
 
 /** Evalúa los archivos .gs (como hace Apps Script: un solo ámbito global compartido). */
 export function loadServer(sources, services) {
